@@ -120,5 +120,6 @@
     <feature name="openhab-misc-market" description="Eclipse IoT Market" version="${project.version}">
         <feature>openhab-runtime-base</feature>
         <feature>esh-extensionservice-marketplace</feature>
+        <feature>esh-extensionservice-marketplace-automation</feature>
     </feature>
 </features>
