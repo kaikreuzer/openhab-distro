@@ -4,21 +4,24 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Release version (e.g., 5.0.1)'
+        description: 'Release version (e.g., 5.0.2)'
         required: true
         type: string
+        default: '5.0.2'
       fromDate:
-        description: 'From date for changelog (ISO format, e.g., 2025-07-16T16:30:00)'
+        description: 'From date for changelog (ISO format, e.g., 2025-08-19T16:30:00)'
         required: true
         type: string
+        default: '2025-08-19T16:30:00'
       toDate:
-        description: 'To date for changelog (ISO format, e.g., 2025-08-19T16:30:00)'
-        required: true
+        description: 'To date for changelog (ISO format, leave empty for current date)'
+        required: false
         type: string
       milestone:
         description: 'Milestone version (e.g., 5.1)'
         required: true
         type: string
+        default: '5.1'
 
 jobs:
   create-release:
@@ -40,8 +43,11 @@ jobs:
 
       - name: Generate changelog
         run: |
-          cd launch
-          ./gradlew buildChangelog -Pversion="${{ inputs.version }}" -Pmilestone="${{ inputs.milestone }}" -PfromDate="${{ inputs.fromDate }}" -PtoDate="${{ inputs.toDate }}"
+          GRADLE_ARGS="-Pversion=${{ inputs.version }} -Pmilestone=${{ inputs.milestone }} -PfromDate=${{ inputs.fromDate }}"
+          if [ -n "${{ inputs.toDate }}" ]; then
+            GRADLE_ARGS="$GRADLE_ARGS -PtoDate=${{ inputs.toDate }}"
+          fi
+          ./gradlew -p launch buildChangelog $GRADLE_ARGS
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

@@ -7,7 +7,7 @@ task prepareDirs {
     mkdir 'build'
   }
 }
-
+ 
 task buildChangelog {
 
   dependsOn prepareDirs
@@ -32,8 +32,11 @@ task buildChangelog {
     if (!fromDate) {
       throw new GradleException("Required property 'fromDate' not provided. Use -PfromDate=<value>")
     }
+    
+    // Use current date if toDate is not provided
     if (!toDate) {
-      throw new GradleException("Required property 'toDate' not provided. Use -PtoDate=<value>")
+      def now = new Date()
+      toDate = now.format("yyyy-MM-dd'T'HH:mm:ss")
     }
     
     def mergedString = "%20merged:${fromDate}..${toDate}"
