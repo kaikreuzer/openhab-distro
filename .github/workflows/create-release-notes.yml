@@ -1,0 +1,115 @@
+name: Create Release Notes
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., 5.0.1)'
+        required: true
+        type: string
+      fromDate:
+        description: 'From date for changelog (ISO format, e.g., 2025-07-16T16:30:00)'
+        required: true
+        type: string
+      toDate:
+        description: 'To date for changelog (ISO format, e.g., 2025-08-19T16:30:00)'
+        required: true
+        type: string
+      milestone:
+        description: 'Milestone version (e.g., 5.1)'
+        required: true
+        type: string
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Generate changelog
+        run: |
+          cd launch
+          ./gradlew buildChangelog -Pversion="${{ inputs.version }}" -Pmilestone="${{ inputs.milestone }}" -PfromDate="${{ inputs.fromDate }}" -PtoDate="${{ inputs.toDate }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Read changelog
+        id: changelog
+        run: |
+          cd launch
+          if [ -f "build/changelog.md" ]; then
+            echo "changelog_content<<EOF" >> $GITHUB_OUTPUT
+            cat build/changelog.md >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          else
+            echo "changelog_content=No changelog generated" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ inputs.version }}
+          release_name: openHAB ${{ inputs.version }}
+          body: ${{ steps.changelog.outputs.changelog_content }}
+          draft: false
+          prerelease: false
+
+      - name: Download openHAB distribution (ZIP)
+        run: |
+          wget -O openhab-${{ inputs.version }}.zip \
+            "https://openhab.jfrog.io/artifactory/libs-release-local/org/openhab/distro/openhab/${{ inputs.version }}/openhab-${{ inputs.version }}.zip"
+
+      - name: Download openHAB distribution (TAR.GZ)
+        run: |
+          wget -O openhab-${{ inputs.version }}.tar.gz \
+            "https://openhab.jfrog.io/artifactory/libs-release-local/org/openhab/distro/openhab/${{ inputs.version }}/openhab-${{ inputs.version }}.tar.gz"
+
+      - name: Download openHAB add-ons (KAR)
+        run: |
+          wget -O openhab-addons-${{ inputs.version }}.kar \
+            "https://openhab.jfrog.io/artifactory/libs-release-local/org/openhab/distro/openhab-addons/${{ inputs.version }}/openhab-addons-${{ inputs.version }}.kar"
+
+      - name: Upload ZIP asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./openhab-${{ inputs.version }}.zip
+          asset_name: openhab-${{ inputs.version }}.zip
+          asset_content_type: application/zip
+
+      - name: Upload TAR.GZ asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./openhab-${{ inputs.version }}.tar.gz
+          asset_name: openhab-${{ inputs.version }}.tar.gz
+          asset_content_type: application/gzip
+
+      - name: Upload KAR asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./openhab-addons-${{ inputs.version }}.kar
+          asset_name: openhab-addons-${{ inputs.version }}.kar
+          asset_content_type: application/octet-stream
