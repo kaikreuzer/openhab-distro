@@ -41,13 +41,17 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v3
+
       - name: Generate changelog
         run: |
           GRADLE_ARGS="-Pversion=${{ inputs.version }} -Pmilestone=${{ inputs.milestone }} -PfromDate=${{ inputs.fromDate }}"
           if [ -n "${{ inputs.toDate }}" ]; then
             GRADLE_ARGS="$GRADLE_ARGS -PtoDate=${{ inputs.toDate }}"
           fi
-          ./gradlew -p launch buildChangelog $GRADLE_ARGS
+          cd launch
+          gradle buildChangelog $GRADLE_ARGS
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
