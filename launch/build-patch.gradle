@@ -103,17 +103,30 @@ task buildChangelog {
         while (searchesLeft > 0) {
           curlURL = "https://api.github.com/search/issues?q=repo:${orgName}/${repoName}%20is:pr${mergedString}${labelString}&per_page=100${pageString}"
           print "Parsing: ${orgName}/${repoName} (Milestone ${milestone}, Page ${pageNumber}"
-          def curlOutput = new ByteArrayOutputStream()
-          project.exec {
-            commandLine "curl", "${curlURL}"
-            standardOutput = curlOutput
-            errorOutput = new ByteArrayOutputStream()
+
+          // Perform HTTP request using native Groovy/Java (no external exec)
+          String curlOutputText = ""
+          try {
+            def conn = new URL(curlURL).openConnection()
+            conn.setRequestProperty('User-Agent', 'openhab-release-bot')
+            conn.setRequestProperty('Accept', 'application/vnd.github+json')
+            def token = System.getenv('GITHUB_TOKEN')
+            if (token) {
+              conn.setRequestProperty('Authorization', "Bearer ${token}")
+              conn.setRequestProperty('X-GitHub-Api-Version', '2022-11-28')
+            }
+            conn.connectTimeout = 15000
+            conn.readTimeout = 60000
+            curlOutputText = conn.inputStream.getText('UTF-8')
+          } catch (Exception e) {
+            throw new GradleException("HTTP request to GitHub failed: ${e.message}")
           }
-          project.exec {
-            commandLine "sleep", "10"
-          }
+
+          // Be nice to the API
+          Thread.sleep(10000)
+
           def jsonSlurper = new JsonSlurper()
-          def searchResults = jsonSlurper.parseText(curlOutput.toString())
+          def searchResults = jsonSlurper.parseText(curlOutputText)
 
           searchResults.items.each{pullRequest ->
             def pullTitle = pullRequest.title
