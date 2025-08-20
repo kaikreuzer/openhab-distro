@@ -55,29 +55,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Read changelog
-        id: changelog
-        run: |
-          cd launch
-          if [ -f "build/changelog.md" ]; then
-            echo "changelog_content<<EOF" >> $GITHUB_OUTPUT
-            cat build/changelog.md >> $GITHUB_OUTPUT
-            echo "EOF" >> $GITHUB_OUTPUT
-          else
-            echo "changelog_content=No changelog generated" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Create release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ inputs.version }}
-          release_name: openHAB ${{ inputs.version }}
-          body: ${{ steps.changelog.outputs.changelog_content }}
-          draft: false
-          prerelease: false
+  # Download assets to upload with the release
 
       - name: Download openHAB distribution (ZIP)
         run: |
@@ -97,32 +75,23 @@ jobs:
             -o openhab-addons-${{ inputs.version }}.kar \
             "https://openhab.jfrog.io/artifactory/libs-release-local/org/openhab/distro/openhab-addons/${{ inputs.version }}/openhab-addons-${{ inputs.version }}.kar"
 
-      - name: Upload ZIP asset
-        uses: actions/upload-release-asset@v1
+      - name: Create GitHub Release and upload assets
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./openhab-${{ inputs.version }}.zip
-          asset_name: openhab-${{ inputs.version }}.zip
-          asset_content_type: application/zip
-
-      - name: Upload TAR.GZ asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./openhab-${{ inputs.version }}.tar.gz
-          asset_name: openhab-${{ inputs.version }}.tar.gz
-          asset_content_type: application/gzip
-
-      - name: Upload KAR asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./openhab-addons-${{ inputs.version }}.kar
-          asset_name: openhab-addons-${{ inputs.version }}.kar
-          asset_content_type: application/octet-stream
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Create or update release with notes from changelog and attach assets
+          if gh release view "${{ inputs.version }}" >/dev/null 2>&1; then
+            # Release exists: update notes and upload assets
+            gh release edit "${{ inputs.version }}" \
+              --title "openHAB ${{ inputs.version }}" \
+              --notes-file "launch/build/changelog.md"
+          else
+            gh release create "${{ inputs.version }}" \
+              --title "openHAB ${{ inputs.version }}" \
+              --notes-file "launch/build/changelog.md"
+          fi
+          gh release upload "${{ inputs.version }}" \
+            "openhab-${{ inputs.version }}.zip" \
+            "openhab-${{ inputs.version }}.tar.gz" \
+            "openhab-addons-${{ inputs.version }}.kar" \
+            --clobber

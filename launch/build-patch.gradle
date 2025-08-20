@@ -148,6 +148,8 @@ task buildChangelog {
               pullTitle = matcher.group(2).trim()
             } else if (repo.addonName) {
               pullAddon = repo.addonName
+            } else {
+              pullAddon = " misc" // starting with a space, so that it appears first
             }
 
             if (repoName == "openhab-core" || repoName == "openhab-distro") {
