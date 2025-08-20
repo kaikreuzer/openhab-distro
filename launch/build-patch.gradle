@@ -148,12 +148,27 @@ task buildChangelog {
               pullTitle = matcher.group(2).trim()
             } else if (repo.addonName) {
               pullAddon = repo.addonName
-            } else {
-              pullAddon = "Main UI"
             }
 
-            if (repoName == "openhab-core"){
+            if (repoName == "openhab-core" || repoName == "openhab-distro") {
               pullAddon = "Core"
+            }
+
+            // Normalize UI add-on names for Web UI repo
+            if (repoName == "openhab-webui") {
+              if (pullAddon?.equalsIgnoreCase("basicui")) {
+                pullAddon = "Basic UI"
+              } else if (pullAddon?.equalsIgnoreCase("habpanel")) {
+                pullAddon = "HABPanel"
+              } else if (pullAddon?.equalsIgnoreCase("habot")) {
+                pullAddon = "HABot"
+              } else if (pullAddon?.equalsIgnoreCase("cometvisu")) {
+                pullAddon = "CometVisu"
+              } else if (pullAddon?.equalsIgnoreCase("iconset")) {
+                pullAddon = "Classic Iconset"
+              } else {
+                pullAddon = "Main UI"
+              }
             }
 
             // Assign the pull request type (bug, enhancment etc)

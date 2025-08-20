@@ -81,17 +81,20 @@ jobs:
 
       - name: Download openHAB distribution (ZIP)
         run: |
-          wget -O openhab-${{ inputs.version }}.zip \
+          curl -fLsS --retry 3 --retry-delay 5 \
+            -o openhab-${{ inputs.version }}.zip \
             "https://openhab.jfrog.io/artifactory/libs-release-local/org/openhab/distro/openhab/${{ inputs.version }}/openhab-${{ inputs.version }}.zip"
 
       - name: Download openHAB distribution (TAR.GZ)
         run: |
-          wget -O openhab-${{ inputs.version }}.tar.gz \
+          curl -fLsS --retry 3 --retry-delay 5 \
+            -o openhab-${{ inputs.version }}.tar.gz \
             "https://openhab.jfrog.io/artifactory/libs-release-local/org/openhab/distro/openhab/${{ inputs.version }}/openhab-${{ inputs.version }}.tar.gz"
 
       - name: Download openHAB add-ons (KAR)
         run: |
-          wget -O openhab-addons-${{ inputs.version }}.kar \
+          curl -fLsS --retry 3 --retry-delay 5 \
+            -o openhab-addons-${{ inputs.version }}.kar \
             "https://openhab.jfrog.io/artifactory/libs-release-local/org/openhab/distro/openhab-addons/${{ inputs.version }}/openhab-addons-${{ inputs.version }}.kar"
 
       - name: Upload ZIP asset
