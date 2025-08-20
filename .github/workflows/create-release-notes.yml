@@ -51,7 +51,7 @@ jobs:
             GRADLE_ARGS="$GRADLE_ARGS -PtoDate=${{ inputs.toDate }}"
           fi
           cd launch
-          gradle -b build-patch.gradle buildChangelog $GRADLE_ARGS
+          gradle buildChangelog $GRADLE_ARGS
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
